@@ -1,0 +1,303 @@
+{
+  "$defs": {
+    "CachePolicy": {
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "ttl": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Time to live in seconds",
+          "title": "Ttl"
+        }
+      },
+      "title": "CachePolicy",
+      "type": "object"
+    },
+    "GraphEdge": {
+      "properties": {
+        "id": {
+          "description": "Unique edge identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "source": {
+          "description": "Source node id or START",
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "description": "Target node id or END",
+          "title": "Target",
+          "type": "string"
+        },
+        "kind": {
+          "default": "normal",
+          "enum": [
+            "normal",
+            "conditional"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Condition specification for routing",
+          "title": "Condition"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target"
+      ],
+      "title": "GraphEdge",
+      "type": "object"
+    },
+    "GraphNode": {
+      "properties": {
+        "id": {
+          "description": "Unique node identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "default": "agent",
+          "description": "Node type: 'agent', 'model', 'tool', 'logic', 'trigger', 'output'",
+          "title": "Type",
+          "type": "string"
+        },
+        "label": {
+          "default": "",
+          "description": "Human-readable label displayed on canvas",
+          "title": "Label",
+          "type": "string"
+        },
+        "position": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Position",
+          "type": "object"
+        },
+        "config": {
+          "additionalProperties": true,
+          "description": "Component configuration",
+          "title": "Config",
+          "type": "object"
+        },
+        "policy": {
+          "$ref": "#/$defs/NodePolicy"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "GraphNode",
+      "type": "object"
+    },
+    "GraphSettings": {
+      "properties": {
+        "checkpointer": {
+          "default": "sqlite",
+          "enum": [
+            "sqlite",
+            "memory",
+            "none"
+          ],
+          "title": "Checkpointer",
+          "type": "string"
+        },
+        "recursion_limit": {
+          "default": 25,
+          "minimum": 1,
+          "title": "Recursion Limit",
+          "type": "integer"
+        },
+        "interrupt_before": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Interrupt Before",
+          "type": "array"
+        },
+        "interrupt_after": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Interrupt After",
+          "type": "array"
+        },
+        "store": {
+          "additionalProperties": true,
+          "title": "Store",
+          "type": "object"
+        },
+        "config_fields": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Config Fields",
+          "type": "array"
+        }
+      },
+      "title": "GraphSettings",
+      "type": "object"
+    },
+    "NodePolicy": {
+      "properties": {
+        "retry": {
+          "$ref": "#/$defs/RetryPolicy"
+        },
+        "cache": {
+          "$ref": "#/$defs/CachePolicy"
+        },
+        "defer": {
+          "default": false,
+          "description": "Defer node execution",
+          "title": "Defer",
+          "type": "boolean"
+        }
+      },
+      "title": "NodePolicy",
+      "type": "object"
+    },
+    "RetryPolicy": {
+      "properties": {
+        "max_retries": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Max Retries",
+          "type": "integer"
+        },
+        "delay": {
+          "default": 1.0,
+          "minimum": 0.0,
+          "title": "Delay",
+          "type": "number"
+        },
+        "backoff_factor": {
+          "default": 2.0,
+          "minimum": 1.0,
+          "title": "Backoff Factor",
+          "type": "number"
+        }
+      },
+      "title": "RetryPolicy",
+      "type": "object"
+    },
+    "StateField": {
+      "properties": {
+        "name": {
+          "description": "Field name in LangGraph TypedDict / state",
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "default": "str",
+          "description": "Type: 'messages', 'str', 'int', 'bool', 'list', 'dict', 'Any'",
+          "title": "Type",
+          "type": "string"
+        },
+        "reducer": {
+          "default": "overwrite",
+          "description": "Reducer: 'add_messages', 'overwrite', 'append'",
+          "title": "Reducer",
+          "type": "string"
+        },
+        "default": {
+          "default": null,
+          "description": "Default value if not provided",
+          "title": "Default"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "StateField",
+      "type": "object"
+    },
+    "StateSchema": {
+      "properties": {
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/StateField"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "input_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Input Fields",
+          "type": "array"
+        },
+        "output_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Output Fields",
+          "type": "array"
+        }
+      },
+      "title": "StateSchema",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "default": "1.0",
+      "description": "SemVer schema version",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "state": {
+      "$ref": "#/$defs/StateSchema"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/GraphNode"
+      },
+      "title": "Nodes",
+      "type": "array"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/GraphEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "subgraphs": {
+      "additionalProperties": true,
+      "title": "Subgraphs",
+      "type": "object"
+    },
+    "settings": {
+      "$ref": "#/$defs/GraphSettings"
+    }
+  },
+  "title": "GraphSchema",
+  "type": "object"
+}

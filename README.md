@@ -1,126 +1,118 @@
 # No-Code Agent
 
-A modern, full-stack platform for visually building, testing, and deploying intelligent AI workflows and autonomous agents without writing code.
+An n8n-style visual AI agent and workflow builder (React + @xyflow/react frontend, FastAPI backend) that runs locally on your machine with **one command** — zero Docker, MongoDB, or Redis required.
+
+All workflows, execution history, and encrypted credentials are automatically stored locally in a single SQLite database at `~/.nocode-agent/data.db`.
 
 ---
 
-## 🚀 Overview
+## ⚡ Quick Start (One Command)
 
-**No-Code Agent** empowers developers and non-technical creators to design complex agentic workflows using an intuitive visual graph interface. Connect LLMs, tools, memory, conditional logic, and eval suites with drag-and-drop simplicity.
-
-### Key Features
-
-- **Visual Workflow Builder**: Interactive node-based canvas powered by React and `@xyflow/react`.
-- **FastAPI Backend**: Asynchronous REST & SSE API with Python 3, MongoDB, and Redis caching.
-- **Microservices Architecture**: Full Docker Compose stack with Nginx reverse proxy, MongoDB, and Redis.
-- **Extensible Agent Components**: Nodes for prompts, memory, compiler, evals, and runtime execution.
-- **Secure Authentication**: Built-in JWT authentication and environment credential handling.
-
----
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, `@xyflow/react`, Lucide Icons, Zustand
-- **Backend**: Python FastAPI, Motor (Async MongoDB), Redis, Pydantic v2, Python-JOSE
-- **Database & Cache**: MongoDB 7, Redis 7 Alpine
-- **Proxy**: Nginx Alpine
-
----
-
-## 📦 Getting Started
-
-### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/)
-- [Node.js](https://nodejs.org/) (v18+) & [Python](https://www.python.org/) (v3.10+) for local development without Docker
-
-### 1. Clone the Repository
+### 1. Install & Run via pip
 
 ```bash
+# Clone the repository
 git clone https://github.com/AbhishekC1005/No-Code-Agent.git
 cd No-Code-Agent
+
+# Install dependencies and CLI
+pip install -e .
+
+# Launch No-Code Agent (starts server and opens your browser)
+nocode-agent start
 ```
 
-### 2. Configure Environment Variables
-
-Copy the example environment configuration:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` to configure your credentials:
-```env
-MONGO_USER=admin
-MONGO_PASS=your_secure_password
-JWT_SECRET=your_random_64_character_secret
-REDIS_URL=redis://redis:6379/0
-```
-
-### 3. Run with Docker Compose
-
-Launch the entire stack (Frontend, Backend, MongoDB, Redis, and Nginx) with a single command:
-
-```bash
-docker-compose up --build
-```
-
-The application will be accessible at:
-- **Frontend / Application**: [http://localhost](http://localhost)
-- **API Documentation (Swagger)**: [http://localhost/docs](http://localhost/docs)
-- **FastAPI Direct**: [http://localhost:8000](http://localhost:8000)
+That's it! Your browser will automatically open to `http://127.0.0.1:8000`.
 
 ---
 
-## 💻 Local Development
+## 🐳 Docker Option (Single Container)
 
-### Backend
-
-```bash
-cd backend
-python -m venv venv
-# On Windows:
-venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
-
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
-
-### Frontend
+If you prefer running via Docker, a single self-contained multi-stage container is available:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+# Build the single container
+docker build -t nocode-agent .
+
+# Run with persistent volume for your local workflows
+docker run -p 8000:8000 -v nocode_data:/data nocode-agent
 ```
 
-The Vite dev server will run at [http://localhost:5173](http://localhost:5173).
+Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ---
 
-## 📂 Project Structure
+## 🛠️ CLI Options
 
+```bash
+nocode-agent start [OPTIONS]
+
+Options:
+  --port INTEGER    Port to listen on (default: 8000)
+  --host TEXT       Host interface to bind to (default: 127.0.0.1)
+  --no-browser      Do not automatically launch the default browser
+  --help            Show help message
 ```
-.
-├── backend/            # FastAPI Python backend
-│   ├── app/            # Application logic, routes, and models
-│   ├── Dockerfile      # Backend container definition
-│   └── requirements.txt# Python dependencies
-├── frontend/           # React + Vite TypeScript frontend
-│   ├── src/            # Components, runtime, evals, and UI
-│   ├── Dockerfile      # Frontend container definition
-│   └── package.json    # Frontend dependencies
-├── nginx/              # Nginx reverse proxy configuration
-│   └── nginx.conf
-├── docker-compose.yml  # Docker multi-container specification
-├── .env.example        # Environment variable template
-└── README.md           # Project documentation
+
+---
+
+## ⚙️ Configuration & Environment Variables
+
+No-Code Agent works out of the box with zero configuration. You can customize runtime settings via environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `NOCODE_DATA_DIR` | `~/.nocode-agent` | Directory where SQLite database (`data.db`) and secret keys are stored |
+| `AUTH_ENABLED` | `false` | When `false`, runs in single-user local mode without login. Set to `true` to require multi-user JWT authentication. |
+| `OPENAI_API_KEY` | *(empty)* | Optional default OpenAI API key (can also be configured via in-app Vault) |
+| `ANTHROPIC_API_KEY` | *(empty)* | Optional default Anthropic API key (can also be configured via in-app Vault) |
+| `PINECONE_API_KEY` | *(empty)* | Optional default Pinecone API key |
+
+---
+
+## 🏗️ Building from Source
+
+To compile the React frontend and package it into the backend:
+
+```bash
+python build.py
 ```
+
+Or using Make:
+```bash
+make build
+```
+
+---
+
+## 💻 Development Mode
+
+For local development with hot-reloading:
+
+1. **Frontend dev server (Vite with HMR):**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   Runs at [http://localhost:5173](http://localhost:5173) with automatic proxying to backend on port 8000.
+
+2. **Backend dev server (Uvicorn with auto-reload):**
+   ```bash
+   uvicorn nocode_agent.main:app --reload --port 8000
+   ```
+
+---
+
+## 📁 Architecture
+
+- **Embedded SQLite Engine**: Stored at `~/.nocode-agent/data.db` using `aiosqlite`. Manages tables for users, workspaces (nodes, edges, schemas as JSON), encrypted credentials, and execution logs.
+- **Unified Single-Process Server**: FastAPI hosts the REST API, SSE execution stream, and serves the compiled React SPA static assets.
+- **Local Credential Vault**: Auto-generates a cryptographic secret on first run (`~/.nocode-agent/secret.key`) and uses Fernet symmetric encryption for all API keys.
+- **Visual Canvas**: Drag-and-drop workflow designer powered by `@xyflow/react` with 9 node categories: Triggers, Models, Agents, Tools, Memory, Knowledge, Logic, Output, and Plugins.
 
 ---
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+MIT License.
